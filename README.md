@@ -1,36 +1,40 @@
 # ArcGIS API for Javascript 4.5 加载天地图WMTS服务示例
 
-在一些涉及到地图功能开发的项目中，会遇到需求方的地图服务是由天地图提供服务的情况。就目前来说，天地图地图服务会以基于OGC的WMTS 1.0.0版本标准提供给开发者使用。使用OGC标准提供服务本身是一件好事，它可以使用任何符合OGC标准的地图类库加载服务，但是天地图的WMTS服务标准与ArcGIS API for JavaScript 4.x（后简称：ArcGIS JSAPI）中实现的标准并不一致，导致了如果直接使用ArcGIS JSAPI中的WMTSLayer 进行图层加载的话会出现地图严重偏离真实位置的情况发生。
-目前网上有很多基于ArcGIS API for JavaScript 3.x的解决方案，但是基于4.x版本API的可运行解决方案很难找到，为了解决这个问题，本文将介绍如何正确的使用ArcGIS JSAPI加载天地图的WMTS服务工作的基本流程和一些需要注意事项。
-本文中介绍的基本流程需要使用ArcMap 10.x版本进行WMTS服务详细参数的查看，并且使用 t0.tianditu.com/vec_c/wmts 服务为示例。 
+在一些涉及到地图功能开发的项目中，会遇到需求方的地图服务是由天地图提供服务的情况。就目前来说，天地图地图服务会以基于 `OGC` 的 `WMTS 1.0.0` 版本标准提供给开发者使用。使用 `OGC` 标准提供服务本身是一件好事，它可以使用任何符合 `OGC` 标准的地图类库加载服务，但是天地图的 `WMTS` 服务标准与 `ArcGIS API for JavaScript 4.x`（后简称：`ArcGIS JSAPI`）中实现的标准并不一致，导致了如果直接使用 `ArcGIS JSAPI`中的`WMTSLayer` 进行图层加载的话会出现地图严重偏离真实位置的情况发生。
+目前网上有很多基于 `ArcGIS API for JavaScript 3.x` 的解决方案，但是基于4.x版本API的可运行解决方案很难找到，为了解决这个问题，本文将介绍如何正确的使用 `ArcGIS JSAPI` 加载天地图的 `WMTS` 服务工作的基本流程和一些需要注意事项。
+本文中介绍的基本流程需要使用 `ArcMap 10.x` 版本进行 `WMTS` 服务详细参数的查看，并且使用 [t0.tianditu.com/vec_c/wmts](t0.tianditu.com/vec_c/wmts) 服务为示例。 
 ## 开始
-首先，使用ArcMap中的ArcCatalog功能，找到GIS Servers项中的Add WMTS Server选项并打开（如下图）：  
+首先，使用 `ArcMap` 中的 `ArcCatalog` 功能，找到 `GIS Servers` 项中的 `Add WMTS Server` 选项并打开（如下图）：  
 ![image](images/1.jpg)  
-将 t0.tianditu.com/vec_c/wmts 填入URL中点击OK确认，并在GISServer中的“在线地图服务 on t0.tianditu.com”中选择vec打开如下图：  
+将 [t0.tianditu.com/vec_c/wmts](t0.tianditu.com/vec_c/wmts) 填入 `URL` 中点击OK确认，并在 `GISServer` 中的 `在线地图服务 on t0.tianditu.com` 中选择 `vec` 图层打开如下图：  
 ![image](images/2.jpg)  
-从属性中能够得到的信息就是地图服务的坐标系是EPSG: 4490，从左侧栏可知该地图服务一共有19个缩放级和每个缩放级的比例尺除数（ScaleDenominator），我们需要将比例尺除数和缩放级的对应关系记录下来，以供后续计算使用。至此，ArcMap的上的工作全部完成。
+从属性中能够得到的信息就是地图服务的坐标系是 `EPSG: 4490`，从左侧栏可知该地图服务一共有`19`个缩放级和每个缩放级的比例尺除数（`ScaleDenominator`），我们需要将比例尺除数和缩放级的对应关系记录下来，以供后续计算使用。至此，`ArcMap`的上的工作全部完成。
 接下来就只有地图API的操作了
 目前我们已经获得的信息有：
-所有的缩放级
-所有缩放级对应的比例尺除数（ScaleDenominator）
-但是，使用ArcGIS JSAPI中的WebTileLayer加载WMTS切片时需要使用TileInfo这个类，而在这个类中需要定义level，scale，resolution三个参数，而目前我们从地图服务中获取的信息只有两个，分别对应：
-level -> 缩放级
-scale -> 缩放级对应的比例尺除数
-那么还有一个参数 - resolution 应该如何获取呢？
+- 所有的缩放级
+- 所有缩放级对应的比例尺除数（`ScaleDenominator`）
+
+但是，使用 `ArcGIS JSAPI` 中的 `WebTileLayer` 加载WMTS切片时需要使用 `TileInfo` 这个类，而在这个类中需要定义 `level`，`scale`，`resolution` 三个参数，而目前我们从地图服务中获取的信息只有两个，分别对应：
+- level -> 缩放级
+- scale -> 缩放级对应的比例尺除数
+
+那么还有一个参数 - `resolution` 应该如何获取呢？
 其实，resolution是可以根据已有的信息计算出来的，它主要基于下面这个公式：  
 ![image](images/equation1.svg)  
 公式中：
-Scale：1 除以 比例尺除数（ScaleDenominator）
-DPI：Dots per Inch，天地图使用的是96 
-inchToMeterRation：inch 转 meter 的转换系数，一般为0.0254
-公式中还有一个隐藏的变量就是米转地球球面上的度的转换参数，为 111194.872221777 
+- Scale：1 除以 比例尺除数（ScaleDenominator）
+- DPI：Dots per Inch，天地图使用的是96 
+- inchToMeterRation：inch 转 meter 的转换系数，一般为0.0254
+- 公式中还有一个隐藏的变量就是米转地球球面上的度的转换参数，为 111194.872221777 
+
 现在我们就可以根据已有的数据将我们所需要的每一个比例尺的resolution计算出来了，计算公式如下：  
 ![image](images/equation2.svg)  
-scaleDenominator：WMTS服务中的缩放级对应的比例尺除数 
-inchToMeterRatio:   inch 转 meter 的转换系数，一般为0.0254 
-DPI：Dots per Inch，天地图（WKID: 4490坐标系服务）使用的是96 
-meterToRadiusRatio：米转地球球面上的度的转换参数，使用111194.872221777 
-这样我们就可以将每个缩放级别的Resolution计算出来了，并拼接成TileInfo类需要的格式，其他配置保持默认。代码如下：
+- scaleDenominator：WMTS服务中的缩放级对应的比例尺除数 
+- inchToMeterRatio:   inch 转 meter 的转换系数，一般为0.0254 
+- DPI：Dots per Inch，天地图（WKID: 4490坐标系服务）使用的是96 
+- meterToRadiusRatio：米转地球球面上的度的转换参数，使用111194.872221777 
+
+这样我们就可以将每个缩放级别的Resolution计算出来了，并拼接成 `TileInfo` 类需要的格式，其他配置保持默认。代码如下：
 ```javascript
  // WGS84（WKID:4326）坐标系DPI
   var dpi = 96;
@@ -96,7 +100,7 @@ meterToRadiusRatio：米转地球球面上的度的转换参数，使用111194.8
   });
 ```
 
-好了，最关键的步骤已经完成，让我们使用WebTileLayer类将天地图的切片加载进地图吧：
+好了，最关键的步骤已经完成，让我们使用 `WebTileLayer` 类将天地图的切片加载进地图吧：
 ```javascript
  var tileInfo = TdtTileInfo;
   var spatialReference = new SpatialReference({ wkid: 4326 });
@@ -141,7 +145,7 @@ meterToRadiusRatio：米转地球球面上的度的转换参数，使用111194.8
   map.addMany([TDT_Layer]);
 });
 ```
-代码中的TdtTileInfo为之前定义好的天地图切片实例，TdtUrlTemplates.TDT为 t0.tianditu.com/vec_c/wmts 的加载路径规则，具体如下：
+代码中的 `TdtTileInfo` 为之前定义好的天地图切片实例，`TdtUrlTemplates.TDT` 为 [t0.tianditu.com/vec_c/wmts](t0.tianditu.com/vec_c/wmts) 的加载路径规则，具体如下：
 ```javascript
 define(function() {
   var urlTemplatesObject = {
@@ -150,10 +154,10 @@ define(function() {
   return urlTemplatesObject;
 });
 ```
-路径加载规则如何获取网上很多教程里都有，这里就不再赘述了。好了，那么现在我们就可以使用ArcGIS JSAPI来加载天地图的WMTS底图服务切片了。
+路径加载规则如何获取网上很多教程里都有，这里就不再赘述了。好了，那么现在我们就可以使用 `ArcGIS JSAPI` 来加载天地图的 `WMTS` 底图服务切片了。
 ## 注意！
-出于某些安全因素的考量，使用这种从WMTS服务中获取参数并进行切片分辨率和比例尺计算的方法获得的底图上的坐标值并不是真实的坐标值，这是因为天地图在暴露给外部使用的WMTS服务中的缩放级别和比例尺并不是行切片制作时的真实值，他们以这种方式来对地图上的经纬度坐标信息进行混淆和加密。这样就会造成使用真实经纬度的点加载到这种底图上时会有一定的偏移，解决这个问题有两种方法：
-方法1：使用解密后的切片加载参数（代码如下）
+出于某些安全因素的考量，使用这种从WMTS服务中获取参数并进行切片分辨率和比例尺计算的方法获得的底图上的坐标值并不是真实的坐标值，这是因为天地图在暴露给外部使用的 `WMTS` 服务中的缩放级别和比例尺并不是行切片制作时的真实值，他们以这种方式来对地图上的经纬度坐标信息进行混淆和加密。这样就会造成使用真实经纬度的点加载到这种底图上时会有一定的偏移，解决这个问题有两种方法：
+#### 方法1：使用解密后的切片加载参数（代码如下）
 ```javascript
    var tileInfo = new TileInfo({
         "rows": 256,
@@ -254,13 +258,13 @@ define(function() {
     });
 ```
 使用这种方式的好处是非常简单，直接使用参数进行图层的加载可以在一定精度上解决切片上坐标变形的问题，但是这种方案只限于对精度要求不高的场景使用，经本人测试发现这种加载方式在大比例尺下的偏移是100m级的，所以对一些需要精准定位的场景而言并不适用，需要使用第二种解决方法。
-方法2：使用需求方提供的坐标加密/解密专用接口
+#### 方法2：使用需求方提供的坐标加密/解密专用接口
 这种接口可以完成两种工作：
 传入加密后的经纬度坐标，返回真实经纬度坐标，用于数据返回。
 传入真实的经纬度坐标，返回经过加密的经纬度坐标，用于地图展示。 
 对于线和面等复杂的图层类型需要与需求方协商做整体转换和服务发布，并加载转换后的服务来解决坐标偏移的问题。
 相信如果是使用天地图为底图且有高精度要求的场景下，需求方是一定会提供方法2中的相关内容的，如果是自己的项目没有强制要求的话，尽量避免使用天地图的WMTS服务。
 ## 结语
-文中已经将在实际项目中遇到的使用ArcGIS JSAPI加载天地图WMTS服务的一些经验和方法在文章中做了总结，并对涉及工作流程和原理的部分做了概述。希望能够帮助到读到此文的各位。
+文中已经将在实际项目中遇到的使用 `ArcGIS JSAPI` 加载天地图 `WMTS` 服务的一些经验和方法在文章中做了总结，并对涉及工作流程和原理的部分做了概述。希望能够帮助到读到此文的各位。
 对文中一些原理性的内容我也不是说非常了解，只是结合自己的GIS背景及使用中的一些经验做了自己的解读，可能有一些不准确的地方，如若各位能够提出修改建议我将会非常感谢。如果对于各位有帮助的话欢迎加星，对于代码层面的改进也欢迎在ISSUE中提出，谢谢！
 
