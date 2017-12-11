@@ -5,9 +5,9 @@
 本文中介绍的基本流程需要使用ArcMap 10.x版本进行WMTS服务详细参数的查看，并且使用 t0.tianditu.com/vec_c/wmts 服务为示例。 
 ## 开始
 首先，使用ArcMap中的ArcCatalog功能，找到GIS Servers项中的Add WMTS Server选项并打开（如下图）：  
-![image](images/1.jpg)
+![image](images/1.jpg)  
 将 t0.tianditu.com/vec_c/wmts 填入URL中点击OK确认，并在GISServer中的“在线地图服务 on t0.tianditu.com”中选择vec打开如下图：  
-![image](images/2.jpg)
+![image](images/2.jpg)  
 从属性中能够得到的信息就是地图服务的坐标系是EPSG: 4490，从左侧栏可知该地图服务一共有19个缩放级和每个缩放级的比例尺除数（ScaleDenominator），我们需要将比例尺除数和缩放级的对应关系记录下来，以供后续计算使用。至此，ArcMap的上的工作全部完成。
 接下来就只有地图API的操作了
 目前我们已经获得的信息有：
@@ -18,13 +18,13 @@ level -> 缩放级
 scale -> 缩放级对应的比例尺除数
 那么还有一个参数 - resolution 应该如何获取呢？
 其实，resolution是可以根据已有的信息计算出来的，它主要基于下面这个公式：  
-![image](images/equation1.svg)
+![image](images/equation1.svg)  
 公式中：
 Scale：1 除以 比例尺除数（ScaleDenominator）
 DPI：Dots per Inch，天地图使用的是96 
 inchToMeterRation：inch 转 meter 的转换系数，一般为0.0254
 公式中还有一个隐藏的变量就是米转地球球面上的度的转换参数，为 111194.872221777 
-现在我们就可以根据已有的数据将我们所需要的每一个比例尺的resolution计算出来了，计算公式如下：
+现在我们就可以根据已有的数据将我们所需要的每一个比例尺的resolution计算出来了，计算公式如下：  
 ![image](images/equation2.svg)  
 scaleDenominator：WMTS服务中的缩放级对应的比例尺除数 
 inchToMeterRatio:   inch 转 meter 的转换系数，一般为0.0254 
